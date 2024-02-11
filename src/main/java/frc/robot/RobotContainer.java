@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.lib.ButtonValidations;
 import frc.robot.autos.OnePieceAuto;
 import frc.robot.autos.ThreePieceAutoBlue;
 import frc.robot.autos.ThreePieceAutoRed;
@@ -29,6 +30,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 public class RobotContainer {
   private XboxController driver = new XboxController(Constants.OperatorConstants.kDriverControllerPort);
   private XboxController operator = new XboxController(Constants.OperatorConstants.kOperatorControllerPort);
+  private ButtonValidations buttonValidator = new ButtonValidations();
 
   private ArmSubsystem arm = new ArmSubsystem();
   private DriveSubystem drive = new DriveSubystem();
@@ -47,36 +49,6 @@ public class RobotContainer {
     configureBindings();
   }
 
-  private boolean getLeftTrigger(){
-    double rawValue = operator.getLeftTriggerAxis();
-    return (rawValue > 0.05); //change deadzone as needed
-  }
-
-  private boolean getRightTrigger(){
-    double rawValue = operator.getRightTriggerAxis();
-    return (rawValue > 0.05); //change deadzone as needed
-  }
-
-  private boolean getLeftStickUp(){
-    double rawValue = operator.getLeftY();
-    return (rawValue > 0.1); //change deadzone as needed
-  }
-
-  private boolean getRightStickUp(){
-    double rawValue = operator.getRightY();
-    return (rawValue > 0.1); //change deadzone as needed
-  }
-  
-  private boolean getLeftStickDown(){
-    double rawValue = operator.getLeftY();
-    return (rawValue < -0.1); //change deadzone as needed
-  }
-
-  private boolean getRightStickDown(){
-    double rawValue = operator.getRightY();
-    return (rawValue < -0.1); //change deadzone as needed
-  }
-
   private void configureBindings() {
     //Driver Controls
     drive.setDefaultCommand(drive.driveComand(driver::getLeftY, driver::getRightY));
@@ -84,10 +56,10 @@ public class RobotContainer {
     
 
     //Operator Controls
-    new Trigger(this::getLeftStickUp).whileTrue(intake.runIntake());
-    new Trigger(this::getLeftStickDown).whileTrue(intake.outTake());
-    new Trigger(this::getRightStickUp).whileTrue(arm.armManualUp());
-    new Trigger(this::getRightStickDown).whileTrue(arm.armManualDown());
+    new Trigger(() -> buttonValidator.getLeftStickUp(operator)).whileTrue(intake.runIntake());
+    new Trigger(() -> buttonValidator.getLeftStickDown(operator)).whileTrue(intake.outTake());
+    new Trigger(() -> buttonValidator.getRightStickUp(operator)).whileTrue(arm.armManualUp());
+    new Trigger(() -> buttonValidator.getRightStickDown(operator)).whileTrue(arm.armManualDown());
     new POVButton(operator, 0).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.ampSpeed));
     new JoystickButton(operator, XboxController.Button.kA.value).onTrue(arm.armGoToPosition(Constants.ARM_POSITIONS.subWooferPosition));
     new JoystickButton(operator, XboxController.Button.kX.value).onTrue(arm.armGoToPosition(Constants.ARM_POSITIONS.podiumPosition));
@@ -95,8 +67,8 @@ public class RobotContainer {
     new JoystickButton(operator, XboxController.Button.kY.value).onTrue(arm.armGoToPosition(Constants.ARM_POSITIONS.ampPosition));
     new JoystickButton(operator, XboxController.Button.kLeftBumper.value).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.podiumSpeed));
     new JoystickButton(operator, XboxController.Button.kRightBumper.value).whileTrue(intake.feedCommand());
-    new Trigger(this::getLeftTrigger).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.subWooferSpeed));
-    new Trigger(this::getRightTrigger).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.midSpeed));
+    new Trigger(() -> buttonValidator.getLeftTrigger(operator)).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.subWooferSpeed));
+    new Trigger(() -> buttonValidator.getRightTrigger(operator)).onTrue(shooter.runShooter(Constants.SHOOTER_SPEEDS.midSpeed));
   }
 
   public Command getAutonomousCommand() {
